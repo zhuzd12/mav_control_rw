@@ -101,6 +101,7 @@ namespace mav_control {
         this->measurements_(0) = position(0);
         this->measurements_(1) = position(1);
         this->measurements_(2) = position(2);
+        // ROS_ERROR("feed position measurement: %f, %f, %f", position(0), position(1), position(2));
     }
 
     void KFPredictionObserver::feedVelocityMeasurement(const Eigen::Vector3d& velocity)
@@ -108,6 +109,7 @@ namespace mav_control {
         this->measurements_(3) = velocity(0);
         this->measurements_(4) = velocity(1);
         this->measurements_(5) = velocity(2);
+        // ROS_ERROR("feed velocity measurement: %f, %f, %f", velocity(0), velocity(1), velocity(2));
     }
 
     void KFPredictionObserver::reset(const Eigen::Vector3d& initial_position,
@@ -120,6 +122,7 @@ namespace mav_control {
 
         state_.segment(0, 3) = initial_position;
         state_.segment(3, 3) = initial_velocity;
+        // ROS_ERROR("prediction reset position : %f, %f, %f", initial_position(0), initial_position(1), initial_position(2));
     }
 
     bool KFPredictionObserver::updateEstimator()
@@ -154,6 +157,7 @@ namespace mav_control {
         state_covariance_.diagonal() += process_noise_covariance_;
         //predict state
         systemDynamics(dt);
+        // ROS_ERROR("prediction initial state : %f, %f, %f", state_(0), state_(1), state_(2));
 
         Eigen::Matrix<double, kMeasurementSize, kMeasurementSize> tmp = H_ * state_covariance_
             * H_.transpose() + measurement_covariance_.asDiagonal().toDenseMatrix();
@@ -162,26 +166,23 @@ namespace mav_control {
 
         //Update with measurements
         state_ = predicted_state_ + K_ * (measurements_ - H_ * state_);
-
+        
         //Update covariance
         state_covariance_ = (Eigen::Matrix<double, kStateSize, kStateSize>::Identity() - K_ * H_)
             * state_covariance_;
 
         //Limits on estimated_disturbances
         if (state_.allFinite() == false) {
-            ROS_ERROR("The estimated state in KF Disturbance Observer has a non-finite element");
+            ROS_ERROR("The estimated state in KF Prediction Observer has a non-finite element");
             return false;
         }
 
         if (observer_state_pub_.getNumSubscribers() > 0) {
+            // ROS_ERROR("begin to generate prediction msg");
             mav_disturbance_observer::PredictionArrayPtr msg(new mav_disturbance_observer::PredictionArray);
             msg->header.stamp = ros::Time::now();
-            Eigen::Matrix<double, kStateSize, 1> new_state, old_state;
-            old_state = state_;
-            // for (int k = 0; k < kStateSize; k++)
-            // {
-            //     old_state(i) = state_(i);
-            // }
+            // Eigen::Matrix<double, kStateSize, 1> new_state, old_state;
+            old_state_ = state_;
 
             Eigen::Matrix<double, kStateSize, kStateSize> cur_state_covariance;
             cur_state_covariance = state_covariance_;

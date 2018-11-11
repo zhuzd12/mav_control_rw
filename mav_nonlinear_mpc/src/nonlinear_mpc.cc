@@ -302,6 +302,7 @@ void NonlinearModelPredictiveControl::calculateRollPitchYawrateThrustCommand(
   prediction_observer_.feedVelocityMeasurement(odometry_.getVelocityWorld());
   bool prediction_update_successful = prediction_observer_.updateEstimator();
   if (!prediction_update_successful) {
+    ROS_ERROR("prediction update failed");
     prediction_observer_.reset(odometry_.position_W, odometry_.getVelocityWorld());
   }
   
