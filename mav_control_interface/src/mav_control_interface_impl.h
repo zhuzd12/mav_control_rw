@@ -19,7 +19,7 @@
 #define MAV_CONTROL_INTERFACE_IMPL_H
 
 #include <deque>
-
+#include <string>
 #include <ros/ros.h>
 #include <mav_msgs/eigen_mav_msgs.h>
 #include <nav_msgs/Odometry.h>
@@ -29,6 +29,8 @@
 #include <mav_control_interface/deadzone.h>
 #include <mav_control_interface/position_controller_interface.h>
 #include <mav_control_interface/rc_interface.h>
+
+#include <mav_disturbance_observer/KF_prediction_observer.h>
 
 #include "state_machine.h"
 
@@ -53,6 +55,8 @@ class MavControlInterfaceImpl
   ros::Subscriber command_trajectory_subscriber_;
   ros::Subscriber command_trajectory_array_subscriber_;
   ros::Timer odometry_watchdog_;
+  ros::Subscriber obstacle_odometry_subscriber_;
+  ros::Subscriber obstacle_prediction_subscriber_;
 
   ros::ServiceServer takeoff_server_;
   ros::ServiceServer back_to_position_hold_server_;
@@ -61,11 +65,15 @@ class MavControlInterfaceImpl
 
   std::unique_ptr<state_machine::StateMachine> state_machine_;
 
+  std::string enemy_mav_name_;
+
   void CommandPoseCallback(const geometry_msgs::PoseStampedConstPtr& msg);
   void CommandTrajectoryCallback(const trajectory_msgs::MultiDOFJointTrajectoryConstPtr& msg);
   void OdometryCallback(const nav_msgs::OdometryConstPtr& msg);
   void OdometryWatchdogCallback(const ros::TimerEvent& e);
   void RcUpdatedCallback(const RcInterfaceBase&);
+  void ObstacleOdometryCallback(const nav_msgs::OdometryConstPtr& msg);
+  void ObstaclePredictionCallback(const mav_disturbance_observer::PredictionArrayPtr msg);
   bool TakeoffCallback(std_srvs::EmptyRequest& request, std_srvs::EmptyResponse& response);
   bool BackToPositionHoldCallback(std_srvs::Empty::Request& request, std_srvs::Empty::Response& response);
 

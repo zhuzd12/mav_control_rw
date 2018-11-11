@@ -46,6 +46,7 @@ NonlinearModelPredictiveControl::NonlinearModelPredictiveControl(const ros::Node
       mpc_queue_(nh, private_nh, ACADO_N+1),
       command_roll_pitch_yaw_thrust_(0, 0, 0, 0),
       disturbance_observer_(nh, private_nh),
+      prediction_observer_(nh, private_nh),
       verbose_(false),
       solve_time_average_(0),
       received_first_odometry_(false)
@@ -214,6 +215,8 @@ void NonlinearModelPredictiveControl::setOdometry(const mav_msgs::EigenOdometry&
                                 odometry.angular_velocity_B, Eigen::Vector3d::Zero(),
                                 Eigen::Vector3d::Zero());
 
+    prediction_observer_.reset(odometry.position_W, odometry.getVelocityWorld());
+
     received_first_odometry_ = true;
   }
 
@@ -295,6 +298,13 @@ void NonlinearModelPredictiveControl::calculateRollPitchYawrateThrustCommand(
   mpc_queue_.updateQueue();
   mpc_queue_.getQueue(position_ref_, velocity_ref_, acceleration_ref_, yaw_ref_, yaw_rate_ref_);
 
+  prediction_observer_.feedPositionMeasurement(odometry_.position_W);
+  prediction_observer_.feedVelocityMeasurement(odometry_.getVelocityWorld());
+  bool prediction_update_successful = prediction_observer_.updateEstimator();
+  if (!prediction_update_successful) {
+    prediction_observer_.reset(odometry_.position_W, odometry_.getVelocityWorld());
+  }
+  
   disturbance_observer_.feedAttitudeCommand(command_roll_pitch_yaw_thrust_);
   disturbance_observer_.feedPositionMeasurement(odometry_.position_W);
   disturbance_observer_.feedVelocityMeasurement(odometry_.getVelocityWorld());

@@ -37,8 +37,28 @@ MavControlInterfaceImpl::MavControlInterfaceImpl(ros::NodeHandle& nh, ros::NodeH
 {
   ros::NodeHandle interface_nh(private_nh, "control_interface");
 
+  if (private_nh_.getParam("enemy_mav_name", enemy_mav_name_))
+  {
+    ROS_ERROR("enemy mav name: %s", enemy_mav_name_.c_str());
+  }
+  else{
+    ROS_ERROR("do not get enemy mav name!");
+  }
+
+
   odometry_watchdog_ = nh_.createTimer(ros::Duration(kOdometryWatchdogTimeout),
                                        &MavControlInterfaceImpl::OdometryWatchdogCallback, this, false, true);
+
+  std::string obstacle_odometry_topic_name = "/" + enemy_mav_name_ + "/ground_truth/" + mav_msgs::default_topics::ODOMETRY;
+  ROS_ERROR("enemy mav topic name: %s", obstacle_odometry_topic_name.c_str());
+  obstacle_odometry_subscriber_ = nh_.subscribe(obstacle_odometry_topic_name, 1,
+                                                &MavControlInterfaceImpl::ObstacleOdometryCallback, this,
+                                                ros::TransportHints().tcpNoDelay());
+
+  std::string obstacle_prediction_topic_name = "/" + enemy_mav_name_ + "/KF_prediction/prediction";
+  obstacle_prediction_subscriber_ = nh_.subscribe(obstacle_prediction_topic_name, 1, 
+                                                &MavControlInterfaceImpl::ObstaclePredictionCallback, this,
+                                                ros::TransportHints().tcpNoDelay());
 
   command_trajectory_subscriber_ = nh_.subscribe(mav_msgs::default_topics::COMMAND_POSE, 1,
                                                  &MavControlInterfaceImpl::CommandPoseCallback, this);
@@ -132,6 +152,24 @@ void MavControlInterfaceImpl::OdometryCallback(const nav_msgs::OdometryConstPtr&
   // Stamp odometry upon reception to be robust against timestamps "in the future".
   odometry.timestamp_ns = ros::Time::now().toNSec();
   state_machine_->process_event(state_machine::OdometryUpdate(odometry));
+}
+
+void MavControlInterfaceImpl::ObstacleOdometryCallback(const nav_msgs::OdometryConstPtr& obstacle_odometry_msg)
+{
+  ROS_INFO_ONCE("Control interface got first obstacle odometry message.");
+  mav_msgs::EigenOdometry obstacle_odometry;
+  mav_msgs::eigenOdometryFromMsg(*obstacle_odometry_msg, &obstacle_odometry);
+  // Stamp odometry upon reception to be robust against timestamps "in the future".
+  obstacle_odometry.timestamp_ns = ros::Time::now().toNSec();
+  // ROS_ERROR("enemy mav x: %f, y: %f, z: %f",obstacle_odometry.position_W(0), obstacle_odometry.position_W(1), obstacle_odometry.position_W(2));
+  // state_machine_->process_event(state_machine::ObstacleOdometryUpdate(obstacle_odometry));
+}
+
+void MavControlInterfaceImpl::ObstaclePredictionCallback(const mav_disturbance_observer::PredictionArrayPtr msg)
+{
+  ROS_INFO_ONCE("Control interface got first obstacle prediction message.");
+  // ROS_ERROR("enemy mav x: %f, y: %f, z: %f",obstacle_odometry.position_W(0), obstacle_odometry.position_W(1), obstacle_odometry.position_W(2));
+  // state_machine_->process_event(state_machine::ObstacleOdometryUpdate(obstacle_odometry));
 }
 
 void MavControlInterfaceImpl::OdometryWatchdogCallback(const ros::TimerEvent& e)

@@ -17,6 +17,10 @@ cs_add_library(KFDisturbanceObserverLibrary
   src/KF_disturbance_observer.cpp
 )
 
+cs_add_library(KFPredictionObserverLibrary
+  src/KF_prediction_observer.cpp
+)
+
 ############
 # BINARIES #
 ############
