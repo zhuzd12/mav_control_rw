@@ -13,7 +13,9 @@ include_directories(${Eigen_INCLUDE_DIRS})
 
 set(SOURCE_FILES
   src/mav_control_interface.cpp
+  src/mav_control_pure.cpp
   src/mav_control_interface_impl.cpp
+  src/mav_control_interface_pure.cpp
   src/parameters.cpp
   src/position_controller_interface.cpp
   src/rc_interface.cpp

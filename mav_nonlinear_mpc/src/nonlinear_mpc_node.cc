@@ -33,6 +33,7 @@
 #include <mav_nonlinear_mpc/nonlinear_mpc_node.h>
 #include <mav_control_interface/mav_control_interface.h>
 #include <mav_control_interface/rc_interface_aci.h>
+#include <mav_control_interface/mav_control_pure.h>
 
 namespace mav_control {
 
@@ -159,10 +160,12 @@ int main(int argc, char** argv)
   std::shared_ptr<mav_control::NonLinearModelPredictiveControllerNode> mpc(
       new mav_control::NonLinearModelPredictiveControllerNode(nh, private_nh));
 
-  std::shared_ptr<mav_control_interface::RcInterfaceAci> rc(
-      new mav_control_interface::RcInterfaceAci(nh));
+  // std::shared_ptr<mav_control_interface::RcInterfaceAci> rc(
+  //     new mav_control_interface::RcInterfaceAci(nh));
 
-  mav_control_interface::MavControlInterface control_interface(nh, private_nh, mpc, rc);
+  // mav_control_interface::MavControlInterface control_interface(nh, private_nh, mpc, rc);
+
+  mav_control_interface::MavControlPure control_interface(nh, private_nh, mpc);
 
   ros::spin();
 
