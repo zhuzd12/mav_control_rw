@@ -66,8 +66,8 @@ class MavControlInterfacePure
 
   std::string reference_frame_id_;
   std::string enemy_mav_name_;
-  bool receive_reference;
-  bool receive_prediction;
+  bool receive_reference_;
+  bool receive_prediction_;
   // bool receive_odometry;
   // ros::Time t_prediction;
   mav_msgs::EigenOdometry current_state_;

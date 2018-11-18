@@ -82,6 +82,26 @@ class NonlinearModelPredictiveControl
     K_yaw_ = K_yaw;
   }
 
+  void setPredictionPenality(const double& q_prediction)
+  {
+    q_prediction_ = q_prediction;
+  }
+
+  void setPredictionKp(const double& prediction_kp)
+  {
+    prediction_kp_ = prediction_kp;
+  }
+
+  void setMinRadius(const double& min_radius)
+  {
+    min_radius_ = min_radius;
+  }
+
+  void setThRadius(const double& th_radius)
+  {
+    th_radius_ = th_radius;
+  }
+
   void setAltitudeIntratorGain(double Ki_altitude)
   {
     Ki_altitude_ = Ki_altitude;
@@ -126,6 +146,7 @@ class NonlinearModelPredictiveControl
 
   // set odom and commands
   void setOdometry(const mav_msgs::EigenOdometry& odometry);
+  void setPrediction(const mav_disturbance_observer::PredictionArrayPtr prediction);
   void setCommandTrajectoryPoint(const mav_msgs::EigenTrajectoryPoint& command_trajectory);
   void setCommandTrajectory(const mav_msgs::EigenTrajectoryPointDeque& command_trajectory);
 
@@ -169,6 +190,18 @@ class NonlinearModelPredictiveControl
   Eigen::Vector3d q_velocity_;
   Eigen::Vector2d q_attitude_;
 
+  // prediction penalty
+  double q_prediction_;
+
+  // prediction gain
+  double prediction_kp_;
+
+  // min radius
+  double min_radius_;
+
+  // th radius
+  double th_radius_;
+
   // control penalty
   Eigen::Vector3d r_command_;
 
@@ -194,6 +227,10 @@ class NonlinearModelPredictiveControl
   MPCQueue mpc_queue_;
   Vector3dDeque position_ref_, velocity_ref_, acceleration_ref_;
   std::deque<double> yaw_ref_, yaw_rate_ref_;
+
+  // prediction queue
+  std::deque<std::array<double ,3>> enemy_prediction_;
+  std::deque<double> prediction_std_dev_;
 
   // solver matrices
   Eigen::Matrix<double, ACADO_NY, ACADO_NY> W_;

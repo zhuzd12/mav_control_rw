@@ -91,6 +91,8 @@ class NonLinearModelPredictiveControllerNode : public mav_control_interface::Pos
 
   virtual bool setOdometry(const mav_msgs::EigenOdometry& odometry);
 
+  virtual bool setPrediction(const mav_disturbance_observer::PredictionArrayPtr prediction);
+
   virtual bool calculateRollPitchYawrateThrustCommand(
       mav_msgs::EigenRollPitchYawrateThrust* attitude_thrust_command);
 

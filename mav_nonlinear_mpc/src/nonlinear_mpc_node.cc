@@ -90,6 +90,11 @@ void NonLinearModelPredictiveControllerNode::ControllerDynConfigCallback(
   nonlinear_mpc_.setVelocityPenality(q_velocity);
   nonlinear_mpc_.setAttitudePenality(q_attitude);
   nonlinear_mpc_.setCommandPenality(r_command);
+  nonlinear_mpc_.setPredictionPenality(config.q_prediction);
+  nonlinear_mpc_.setMinRadius(config.min_radius);
+  nonlinear_mpc_.setThRadius(config.th_radius);
+  nonlinear_mpc_.setPredictionKp(config.prediction_kp);
+
   nonlinear_mpc_.setYawGain(config.K_yaw);
   nonlinear_mpc_.setControlLimits(control_limits);
 
@@ -108,6 +113,12 @@ void NonLinearModelPredictiveControllerNode::ControllerDynConfigCallback(
 bool NonLinearModelPredictiveControllerNode::setOdometry(const mav_msgs::EigenOdometry& odometry)
 {
   nonlinear_mpc_.setOdometry(odometry);
+  return true;
+}
+
+bool NonLinearModelPredictiveControllerNode::setPrediction(const mav_disturbance_observer::PredictionArrayPtr prediction)
+{
+  nonlinear_mpc_.setPrediction(prediction);
   return true;
 }
 

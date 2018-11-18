@@ -78,8 +78,8 @@ MavControlInterfacePure::MavControlInterfacePure(ros::NodeHandle& nh, ros::NodeH
 
   takeoff_server_ = nh.advertiseService("takeoff", &MavControlInterfacePure::TakeoffCallback, this);
   
-  receive_prediction = false;
-  receive_reference = false;
+  receive_prediction_ = false;
+  receive_reference_ = false;
   ROS_INFO_STREAM("Created pure control interface for controller " << controller->getName());
   // state_machine_->start();
 }
@@ -97,7 +97,7 @@ void MavControlInterfacePure::CommandPoseCallback(const geometry_msgs::PoseStamp
   // mav_msgs::EigenTrajectoryPointDeque references;
   current_reference_queue_.push_back(reference);
   controller_->setReference(reference);
-  receive_reference = true;
+  receive_reference_ = true;
 }
 
 void MavControlInterfacePure::CommandTrajectoryCallback(
@@ -118,7 +118,7 @@ void MavControlInterfacePure::CommandTrajectoryCallback(
   {
       controller_->setReferenceArray(current_reference_queue_);
   }
-  receive_reference = true;
+  receive_reference_ = true;
 }
 
 void MavControlInterfacePure::OdometryCallback(const nav_msgs::OdometryConstPtr& odometry_msg)
@@ -130,9 +130,9 @@ void MavControlInterfacePure::OdometryCallback(const nav_msgs::OdometryConstPtr&
   current_state_.timestamp_ns = ros::Time::now().toNSec();
   controller_->setOdometry(current_state_);
   // compute cmd
-  if (!receive_reference) // todo: add receive_prediction and prediction time gap(ros::Time::now() - t_prediction < 0.1)
+  if (!receive_reference_ || !receive_prediction_) // todo: add receive_prediction and prediction time gap(ros::Time::now() - t_prediction < 0.1)
   {
-      ROS_INFO("reference not received!");
+      // ROS_INFO("reference not received!");
       return;
   }
   mav_msgs::EigenRollPitchYawrateThrust command;
@@ -160,6 +160,8 @@ void MavControlInterfacePure::ObstaclePredictionCallback(const mav_disturbance_o
   // ROS_ERROR("enemy mav x: %f, y: %f, z: %f",obstacle_odometry.position_W(0), obstacle_odometry.position_W(1), obstacle_odometry.position_W(2));
   // state_machine_->process_event(state_machine::ObstacleOdometryUpdate(obstacle_odometry));
   // todo: controller_->setPrediction();
+  controller_->setPrediction(msg);
+  receive_prediction_ = true;
 }
 
 bool MavControlInterfacePure::TakeoffCallback(std_srvs::Empty::Request& request,

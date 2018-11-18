@@ -77,6 +77,11 @@ class LinearModelPredictiveControllerNode: public mav_control_interface::Positio
 
   virtual bool getPredictedState(mav_msgs::EigenTrajectoryPointDeque* predicted_state) const;
 
+  virtual bool setPrediction(const mav_disturbance_observer::PredictionArrayPtr prediction)
+  {
+    return true;
+  }
+
 };
 
 }

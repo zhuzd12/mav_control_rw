@@ -21,6 +21,7 @@
 #include <mav_msgs/conversions.h>
 #include <mav_msgs/eigen_mav_msgs.h>
 #include <nav_msgs/Odometry.h>
+#include <mav_disturbance_observer/KF_prediction_observer.h>
 
 namespace mav_control_interface {
 
@@ -40,6 +41,8 @@ class PositionControllerInterface {
   virtual bool setReferenceArray(const mav_msgs::EigenTrajectoryPointDeque& reference_array);
 
   virtual bool setOdometry(const mav_msgs::EigenOdometry& odometry) = 0;
+
+  virtual bool setPrediction(const mav_disturbance_observer::PredictionArrayPtr prediction) = 0;
 
   virtual bool getCurrentReference(mav_msgs::EigenTrajectoryPoint* reference) const = 0;
 

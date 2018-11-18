@@ -187,7 +187,7 @@ namespace mav_control {
             Eigen::Matrix<double, kStateSize, kStateSize> cur_state_covariance;
             cur_state_covariance = state_covariance_;
 
-            for (int i = 0; i < TN; i++) {
+            for (int i = 0; i < TN+1; i++) {
                 mav_disturbance_observer::PredictionPoint point_msg;
                 propagate(Ts);
                 cur_state_covariance = F_ * cur_state_covariance * F_.transpose();
@@ -195,8 +195,12 @@ namespace mav_control {
                 {
                     point_msg.position[j] = old_state_(j);
                     point_msg.velocity[j] = old_state_(j + 3);
-                    point_msg.pos_var[j] = cur_state_covariance(j, j);
+                    // point_msg.pos_var[j] = cur_state_covariance(j, j);
                 }
+
+                //Eigen::Matrix<double, kStateSize, kStateSize> D = cur_state_covariance.pseudoEigenvalueMatrix();
+                Eigen::EigenSolver<Eigen::Matrix<double, kStateSize, kStateSize>> es(cur_state_covariance, false);
+                point_msg.pos_var = std::sqrt(es.eigenvalues().real().maxCoeff());
                 msg->points.push_back(point_msg);
                 old_state_ = new_state_;
             }

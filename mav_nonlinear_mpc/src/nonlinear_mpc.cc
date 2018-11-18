@@ -149,9 +149,29 @@ void NonlinearModelPredictiveControl::initializeParameters()
     abort();
   }
 
+  // if (!private_nh_.getParam("q_prediction", q_prediction_)) {
+  //   ROS_ERROR("q_prediction in nonlinear MPC is not loaded from ros parameter server");
+  //   abort();
+  // }
+
+  // if (!private_nh_.getParam("prediction_kp", prediction_kp_)) {
+  //   ROS_ERROR("prediction_kp in nonlinear MPC is not loaded from ros parameter server");
+  //   abort();
+  // }
+  
+  // if (!private_nh_.getParam("min_radius", min_radius_)) {
+  //   ROS_ERROR("min_radius in nonlinear MPC is not loaded from ros parameter server");
+  //   abort();
+  // }
+
+  // if (!private_nh_.getParam("th_radius", th_radius_)) {
+  //   ROS_ERROR("th_radius in nonlinear MPC is not loaded from ros parameter server");
+  //   abort();
+  // }
+
   for (int i = 0; i < ACADO_N + 1; i++) {
     acado_online_data_.block(i, 0, 1, ACADO_NOD) << roll_time_constant_, roll_gain_, pitch_time_constant_, pitch_gain_, drag_coefficients_(
-        0), drag_coefficients_(1), 0, 0, 0;
+        0), drag_coefficients_(1), 0, 0, 0, 0, 0, 0, min_radius_, th_radius_, prediction_kp_;
   }
 
   Eigen::Map<Eigen::Matrix<double, ACADO_NOD, ACADO_N + 1>>(const_cast<double*>(acadoVariables.od)) =
@@ -171,6 +191,7 @@ void NonlinearModelPredictiveControl::applyParameters()
   W_.block(3, 3, 3, 3) = q_velocity_.asDiagonal();
   W_.block(6, 6, 2, 2) = q_attitude_.asDiagonal();
   W_.block(8, 8, 3, 3) = r_command_.asDiagonal();
+  W_(11, 11) = q_prediction_;
 
   WN_ = solveCARE((Eigen::VectorXd(6) << q_position_, q_velocity_).finished().asDiagonal(),
                   r_command_.asDiagonal());
@@ -247,6 +268,31 @@ void NonlinearModelPredictiveControl::setOdometry(const mav_msgs::EigenOdometry&
   odometry_.orientation_W_B = odometry.orientation_W_B;
   odometry_.timestamp_ns = odometry.timestamp_ns;
   previous_odometry.orientation_W_B = odometry.orientation_W_B;
+
+  // publish prediction
+  prediction_observer_.feedPositionMeasurement(odometry_.position_W);
+  prediction_observer_.feedVelocityMeasurement(odometry_.getVelocityWorld());
+  bool prediction_update_successful = prediction_observer_.updateEstimator();
+  if (!prediction_update_successful) {
+    ROS_ERROR("prediction update failed");
+    prediction_observer_.reset(odometry_.position_W, odometry_.getVelocityWorld());
+  }
+
+}
+
+void NonlinearModelPredictiveControl::setPrediction(const mav_disturbance_observer::PredictionArrayPtr prediction)
+{
+  // update prediction
+  enemy_prediction_.clear();
+  prediction_std_dev_.clear();
+  for (size_t i = 0; i < ACADO_N + 1; i++)
+  {
+    enemy_prediction_.push_back({prediction->points[i].position[0], prediction->points[i].position[1], prediction->points[i].position[2]});
+    // ROS_INFO("prediction: %f, %f, %f", prediction->points[i].position[0], prediction->points[i].position[1], prediction->points[i].position[2]);
+    prediction_std_dev_.push_back(prediction->points[1].pos_var);
+    // ROS_INFO("prediction std dev: %f", prediction->points[1].pos_var);
+  }
+
 }
 
 void NonlinearModelPredictiveControl::setCommandTrajectoryPoint(
@@ -298,13 +344,13 @@ void NonlinearModelPredictiveControl::calculateRollPitchYawrateThrustCommand(
   mpc_queue_.updateQueue();
   mpc_queue_.getQueue(position_ref_, velocity_ref_, acceleration_ref_, yaw_ref_, yaw_rate_ref_);
 
-  prediction_observer_.feedPositionMeasurement(odometry_.position_W);
-  prediction_observer_.feedVelocityMeasurement(odometry_.getVelocityWorld());
-  bool prediction_update_successful = prediction_observer_.updateEstimator();
-  if (!prediction_update_successful) {
-    ROS_ERROR("prediction update failed");
-    prediction_observer_.reset(odometry_.position_W, odometry_.getVelocityWorld());
-  }
+  // prediction_observer_.feedPositionMeasurement(odometry_.position_W);
+  // prediction_observer_.feedVelocityMeasurement(odometry_.getVelocityWorld());
+  // bool prediction_update_successful = prediction_observer_.updateEstimator();
+  // if (!prediction_update_successful) {
+  //   ROS_ERROR("prediction update failed");
+  //   prediction_observer_.reset(odometry_.position_W, odometry_.getVelocityWorld());
+  // }
   
   disturbance_observer_.feedAttitudeCommand(command_roll_pitch_yaw_thrust_);
   disturbance_observer_.feedPositionMeasurement(odometry_.position_W);
@@ -359,11 +405,15 @@ void NonlinearModelPredictiveControl::calculateRollPitchYawrateThrustCommand(
         (-(acceleration_ref_B(1) - estimated_disturbances_B(1)) / kGravity),
         ((acceleration_ref_B(0) - estimated_disturbances_B(0)) / kGravity));
     reference_.block(i, 0, 1, ACADO_NY) << position_ref_[i].transpose(), velocity_ref_[i].transpose(), feed_forward
-        .transpose(), feed_forward.transpose(), acceleration_ref_[i].z() - estimated_disturbances(2);
-    acado_online_data_.block(i, ACADO_NOD - 3, 1, 3) << estimated_disturbances.transpose();
+        .transpose(), feed_forward.transpose(), acceleration_ref_[i].z() - estimated_disturbances(2), 0;
+    acado_online_data_.block(i, ACADO_NOD - 3 - 6, 1, 3) << estimated_disturbances.transpose();
+    acado_online_data_.block(i, ACADO_NOD - 6, 1, 3) << enemy_prediction_[i][0], enemy_prediction_[i][1], enemy_prediction_[i][2];
+    // acado_online_data_.block(i, ACADO_NOD - 3, 1, 3) << min_radius_, th_radius_, prediction_kp_;
   }
   referenceN_ << position_ref_[ACADO_N].transpose(), velocity_ref_[ACADO_N].transpose();
   acado_online_data_.block(ACADO_N, ACADO_NOD - 3, 1, 3) << estimated_disturbances.transpose();
+  acado_online_data_.block(ACADO_N, ACADO_NOD - 6, 1, 3) << enemy_prediction_[ACADO_N][0], enemy_prediction_[ACADO_N][1], enemy_prediction_[ACADO_N][2];
+  // acado_online_data_.block(ACADO_N, ACADO_NOD - 3, 1, 3) << min_radius_, th_radius_, prediction_kp_;
 
   x_0 << odometry_.getVelocityWorld(), current_rpy, odometry_.position_W;
 

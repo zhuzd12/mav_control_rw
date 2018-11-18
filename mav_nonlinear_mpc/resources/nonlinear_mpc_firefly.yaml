@@ -34,6 +34,12 @@ r_roll  : 50
 r_pitch : 50
 r_thrust : 1
 
+q_prediction : 10
+
+min_radius : 0.2
+th_radius : 0.5
+prediction_kp : 4
+
 roll_max: deg(25.0)
 pitch_max: deg(25.0)
 thrust_min: 5

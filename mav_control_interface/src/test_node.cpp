@@ -58,6 +58,11 @@ class DummyController : public PositionControllerInterface{
     return true;
   }
 
+  virtual bool setPrediction(const mav_disturbance_observer::PredictionArrayPtr prediction)
+  {
+    return true;
+  }
+
   virtual bool calculateRollPitchYawrateThrustCommand(
       mav_msgs::EigenRollPitchYawrateThrust* attitude_thrust_command){
     ROS_INFO("calculateRollPitchYawrateThrustCommand");
