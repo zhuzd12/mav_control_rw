@@ -246,7 +246,7 @@ class NonlinearModelPredictiveControl
   KFDisturbanceObserver disturbance_observer_;
 
   // prediction observer(for other agent)
-  KFPredictionObserver prediction_observer_;
+  // KFPredictionObserver prediction_observer_;
 
   // commands
   Eigen::Vector4d command_roll_pitch_yaw_thrust_;

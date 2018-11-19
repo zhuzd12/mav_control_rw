@@ -16,10 +16,16 @@ include_directories(${Eigen_INCLUDE_DIRS})
 cs_add_library(KFDisturbanceObserverLibrary
   src/KF_disturbance_observer.cpp
 )
+  
+# cs_add_library(KFPredictionObserverLibrary
+#   src/KF_prediction_observer.cpp
+# )
 
-cs_add_library(KFPredictionObserverLibrary
+cs_add_executable(KF_prediction_observer
   src/KF_prediction_observer.cpp
 )
+
+add_dependencies(KF_prediction_observer ${${PROJECT_NAME}_EXPORTED_TARGETS})
 
 ############
 # BINARIES #

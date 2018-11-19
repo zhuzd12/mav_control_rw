@@ -1,6 +1,6 @@
 #include <mav_disturbance_observer/KF_prediction_observer.h>
 
-namespace mav_control {
+namespace mav_prediction {
     constexpr int KFPredictionObserver::kStateSize;
     constexpr int KFPredictionObserver::kMeasurementSize;
     constexpr double KFPredictionObserver::kGravity;
@@ -26,7 +26,11 @@ namespace mav_control {
 
         ROS_INFO("start initializing mav_prediction_observer:KF");
 
-        observer_state_pub_ = observer_nh_.advertise<mav_disturbance_observer::PredictionArray>(
+        odometry_subscriber_ = nh_.subscribe(mav_msgs::default_topics::ODOMETRY, 1,
+                                       &KFPredictionObserver::OdometryCallback, this,
+                                       ros::TransportHints().tcpNoDelay());
+
+        observer_state_pub_ = private_nh_.advertise<mav_disturbance_observer::PredictionArray>(
             "prediction", 10);
 
         dynamic_reconfigure::Server<mav_disturbance_observer::KFPredictionObserverConfig>::CallbackType f;
@@ -37,6 +41,7 @@ namespace mav_control {
 
         state_.setZero();
         predicted_state_.setZero();
+        received_first_odometry_ = false;
         initialized_ = true;
 
         ROS_INFO("Kalman Filter for Prediction Initialized!");
@@ -263,4 +268,66 @@ namespace mav_control {
     {
     }
 
+    void KFPredictionObserver::OdometryCallback(const nav_msgs::OdometryConstPtr& odometry_msg)
+    {
+         static mav_msgs::EigenOdometry odometry;
+         mav_msgs::eigenOdometryFromMsg(*odometry_msg, &odometry);
+         static mav_msgs::EigenOdometry previous_odometry = odometry_;
+        if (!received_first_odometry_)
+        {
+            reset(odometry.position_W, odometry.getVelocityWorld());
+            received_first_odometry_ = true;
+            return;
+        }
+        if (odometry.position_W.allFinite() == false) {
+            odometry_.position_W = previous_odometry.position_W;
+            ROS_WARN("Odometry.position has a non finite element");
+        } else {
+            odometry_.position_W = odometry.position_W;
+            previous_odometry.position_W = odometry.position_W;
+        }
+
+        if (odometry.velocity_B.allFinite() == false) {
+            odometry_.velocity_B = previous_odometry.velocity_B;
+            ROS_WARN("Odometry.velocity has a non finite element");
+        } else {
+            odometry_.velocity_B = odometry.velocity_B;
+            previous_odometry.velocity_B = odometry.velocity_B;
+        }
+
+        if (odometry.angular_velocity_B.allFinite() == false) {
+            odometry_.angular_velocity_B = previous_odometry.angular_velocity_B;
+            ROS_WARN("Odometry.angular_velocity has a non finite element");
+        } else {
+            odometry_.angular_velocity_B = odometry.angular_velocity_B;
+            previous_odometry.angular_velocity_B = odometry.angular_velocity_B;
+        }
+
+        odometry_.orientation_W_B = odometry.orientation_W_B;
+        odometry_.timestamp_ns = odometry.timestamp_ns;
+        previous_odometry.orientation_W_B = odometry.orientation_W_B;
+        
+        feedPositionMeasurement(odometry_.position_W);
+        feedVelocityMeasurement(odometry_.getVelocityWorld());
+        bool prediction_update_successful = updateEstimator();
+        if (!prediction_update_successful) {
+            ROS_ERROR("prediction update failed");
+            reset(odometry_.position_W, odometry_.getVelocityWorld());
+        }
+        // ROS_ERROR("prediction published !");
+    }
+
+};
+
+int main(int argc, char** argv)
+{
+  ros::init(argc, argv, "PredictionNode");
+
+  ros::NodeHandle nh, private_nh("~");
+
+  mav_prediction::KFPredictionObserver prediction_observer_(nh, private_nh);
+
+  ros::spin();
+
+  return 0;
 }

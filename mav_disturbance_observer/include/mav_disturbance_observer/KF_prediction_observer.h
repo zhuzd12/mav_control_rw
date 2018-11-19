@@ -38,6 +38,10 @@
 #include <std_srvs/Empty.h>
 #include <iostream>
 #include <unsupported/Eigen/MatrixFunctions>
+#include <mav_msgs/conversions.h>
+#include <mav_msgs/eigen_mav_msgs.h>
+#include <nav_msgs/Odometry.h>
+#include <mav_msgs/default_topics.h>
 
 //dynamic reconfigure
 #include <dynamic_reconfigure/server.h>
@@ -45,7 +49,7 @@
 #include <mav_disturbance_observer/PredictionPoint.h>
 #include <mav_disturbance_observer/PredictionArray.h>
 
-namespace mav_control {
+namespace mav_prediction {
 class KFPredictionObserver
 {
  public:
@@ -113,6 +117,11 @@ class KFPredictionObserver
 
   double sampling_time_;
 
+  // most recent odometry information
+  mav_msgs::EigenOdometry odometry_;
+  bool received_first_odometry_;
+
+  ros::Subscriber odometry_subscriber_;
   ros::ServiceServer service_;
   ros::Publisher observer_state_pub_;
 
@@ -125,6 +134,8 @@ class KFPredictionObserver
   void DynConfigCallback(mav_disturbance_observer::KFPredictionObserverConfig &config, uint32_t level);
 
   void loadROSParams();
+
+  void OdometryCallback(const nav_msgs::OdometryConstPtr& odometry_msg);
 
 };
 }

@@ -59,7 +59,7 @@ MavControlInterfacePure::MavControlInterfacePure(ros::NodeHandle& nh, ros::NodeH
                                                 &MavControlInterfacePure::ObstacleOdometryCallback, this,
                                                 ros::TransportHints().tcpNoDelay());
   
-  std::string obstacle_prediction_topic_name = "/" + enemy_mav_name_ + "/mav_nonlinear_mpc/KF_prediction/prediction";
+  std::string obstacle_prediction_topic_name = "/" + enemy_mav_name_ + "/KF_prediction_observer/prediction";
   ROS_INFO("enemy mav topic name: %s", obstacle_prediction_topic_name.c_str());
   obstacle_prediction_subscriber_ = nh_.subscribe(obstacle_prediction_topic_name, 1, 
                                                 &MavControlInterfacePure::ObstaclePredictionCallback, this,

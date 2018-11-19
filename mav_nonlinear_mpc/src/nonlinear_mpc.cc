@@ -46,7 +46,7 @@ NonlinearModelPredictiveControl::NonlinearModelPredictiveControl(const ros::Node
       mpc_queue_(nh, private_nh, ACADO_N+1),
       command_roll_pitch_yaw_thrust_(0, 0, 0, 0),
       disturbance_observer_(nh, private_nh),
-      prediction_observer_(nh, private_nh),
+      // prediction_observer_(nh, private_nh),
       verbose_(false),
       solve_time_average_(0),
       received_first_odometry_(false)
@@ -242,7 +242,7 @@ void NonlinearModelPredictiveControl::setOdometry(const mav_msgs::EigenOdometry&
                                 odometry.angular_velocity_B, Eigen::Vector3d::Zero(),
                                 Eigen::Vector3d::Zero());
 
-    prediction_observer_.reset(odometry.position_W, odometry.getVelocityWorld());
+    // prediction_observer_.reset(odometry.position_W, odometry.getVelocityWorld());
 
     received_first_odometry_ = true;
   }
@@ -276,13 +276,13 @@ void NonlinearModelPredictiveControl::setOdometry(const mav_msgs::EigenOdometry&
   previous_odometry.orientation_W_B = odometry.orientation_W_B;
 
   // publish prediction
-  prediction_observer_.feedPositionMeasurement(odometry_.position_W);
-  prediction_observer_.feedVelocityMeasurement(odometry_.getVelocityWorld());
-  bool prediction_update_successful = prediction_observer_.updateEstimator();
-  if (!prediction_update_successful) {
-    ROS_ERROR("prediction update failed");
-    prediction_observer_.reset(odometry_.position_W, odometry_.getVelocityWorld());
-  }
+  // prediction_observer_.feedPositionMeasurement(odometry_.position_W);
+  // prediction_observer_.feedVelocityMeasurement(odometry_.getVelocityWorld());
+  // bool prediction_update_successful = prediction_observer_.updateEstimator();
+  // if (!prediction_update_successful) {
+  //   ROS_ERROR("prediction update failed");
+  //   prediction_observer_.reset(odometry_.position_W, odometry_.getVelocityWorld());
+  // }
 
 }
 
@@ -414,7 +414,7 @@ void NonlinearModelPredictiveControl::calculateRollPitchYawrateThrustCommand(
         .transpose(), feed_forward.transpose(), acceleration_ref_[i].z() - estimated_disturbances(2), 0;
     acado_online_data_.block(i, ACADO_NOD - 3 - 6, 1, 3) << estimated_disturbances.transpose();
     acado_online_data_.block(i, ACADO_NOD - 6, 1, 3) << enemy_prediction_[i][0], enemy_prediction_[i][1], enemy_prediction_[i][2];
-    // acado_online_data_.block(i, ACADO_NOD - 3, 1, 3) << min_radius_, th_radius_, prediction_kp_;
+    acado_online_data_.block(i, ACADO_NOD - 3, 1, 2) << min_radius_+ 3*prediction_std_dev_[i], th_radius_ + 3*prediction_std_dev_[i];
   }
   referenceN_ << position_ref_[ACADO_N].transpose(), velocity_ref_[ACADO_N].transpose();
   acado_online_data_.block(ACADO_N, ACADO_NOD - 3, 1, 3) << estimated_disturbances.transpose();

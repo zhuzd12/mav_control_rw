@@ -36,8 +36,8 @@ r_thrust : 1
 
 q_prediction : 80
 
-min_radius : 0.5
-th_radius : 1.0
+min_radius : 0.9
+th_radius : 1.2
 prediction_kp : 4
 
 roll_max: deg(25.0)
