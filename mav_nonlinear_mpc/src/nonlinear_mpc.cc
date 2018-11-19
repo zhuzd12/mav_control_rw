@@ -154,21 +154,24 @@ void NonlinearModelPredictiveControl::initializeParameters()
   //   abort();
   // }
 
-  // if (!private_nh_.getParam("prediction_kp", prediction_kp_)) {
-  //   ROS_ERROR("prediction_kp in nonlinear MPC is not loaded from ros parameter server");
-  //   abort();
-  // }
+  if (!private_nh_.getParam("prediction_kp", prediction_kp_)) {
+    ROS_ERROR("prediction_kp in nonlinear MPC is not loaded from ros parameter server");
+    abort();
+  }
   
-  // if (!private_nh_.getParam("min_radius", min_radius_)) {
-  //   ROS_ERROR("min_radius in nonlinear MPC is not loaded from ros parameter server");
-  //   abort();
-  // }
+  if (!private_nh_.getParam("min_radius", min_radius_)) {
+    ROS_ERROR("min_radius in nonlinear MPC is not loaded from ros parameter server");
+    abort();
+  }
 
-  // if (!private_nh_.getParam("th_radius", th_radius_)) {
-  //   ROS_ERROR("th_radius in nonlinear MPC is not loaded from ros parameter server");
-  //   abort();
-  // }
+  if (!private_nh_.getParam("th_radius", th_radius_)) {
+    ROS_ERROR("th_radius in nonlinear MPC is not loaded from ros parameter server");
+    abort();
+  }
 
+  // ROS_ERROR("min radius: %f, th radius: %f", min_radius_, th_radius_);
+  // ROS_ERROR("prediction kp: %f, q_prediction: %f", prediction_kp_, q_prediction_);
+  // ROS_ERROR("q_position: %f", q_position_(0));
   for (int i = 0; i < ACADO_N + 1; i++) {
     acado_online_data_.block(i, 0, 1, ACADO_NOD) << roll_time_constant_, roll_gain_, pitch_time_constant_, pitch_gain_, drag_coefficients_(
         0), drag_coefficients_(1), 0, 0, 0, 0, 0, 0, min_radius_, th_radius_, prediction_kp_;
@@ -187,6 +190,8 @@ void NonlinearModelPredictiveControl::initializeParameters()
 
 void NonlinearModelPredictiveControl::applyParameters()
 {
+  // ROS_ERROR("debug q_position: %f", q_position_(0));
+  // ROS_ERROR("debug q_prediction: %f", q_prediction_);
   W_.block(0, 0, 3, 3) = q_position_.asDiagonal();
   W_.block(3, 3, 3, 3) = q_velocity_.asDiagonal();
   W_.block(6, 6, 2, 2) = q_attitude_.asDiagonal();
@@ -214,6 +219,7 @@ void NonlinearModelPredictiveControl::applyParameters()
     std::cout << "q_position_: " << q_position_.transpose() << std::endl;
     std::cout << "q_velocity_: " << q_velocity_.transpose() << std::endl;
     std::cout << "r_command_: " << r_command_.transpose() << std::endl;
+    std::cout << "q_prediction_: " << q_prediction_ << std::endl;
     std::cout << "W_N = \n" << WN_ << std::endl;
   }
 }
