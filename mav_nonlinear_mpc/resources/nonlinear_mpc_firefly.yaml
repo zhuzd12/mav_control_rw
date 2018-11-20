@@ -34,7 +34,7 @@ r_roll  : 50
 r_pitch : 50
 r_thrust : 1
 
-q_prediction : 80
+q_prediction : 100
 
 min_radius : 0.5
 th_radius : 1.0
