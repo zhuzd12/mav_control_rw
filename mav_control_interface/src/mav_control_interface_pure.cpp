@@ -49,9 +49,9 @@ MavControlInterfacePure::MavControlInterfacePure(ros::NodeHandle& nh, ros::NodeH
 //   private_nh_.getParam("mav_name", mav_name);
 //   ROS_ERROR("mav name: %s", mav_name.c_str());
   if (private_nh_.getParam("enemy_mav_name", enemy_mav_name_))
-    ROS_ERROR("enemy mav name: %s", enemy_mav_name_.c_str());
+    ROS_INFO("enemy mav name: %s", enemy_mav_name_.c_str());
   else
-    ROS_ERROR("do not get enemy mav name!");
+    ROS_ERROR("enemy mav name in mav_control_interface_pure is not loaded from ros parameter server!");
 
   std::string obstacle_odometry_topic_name = "/" + enemy_mav_name_ + "/ground_truth/" + mav_msgs::default_topics::ODOMETRY;
   // ROS_ERROR("enemy mav topic name: %s", obstacle_odometry_topic_name.c_str());
@@ -60,7 +60,7 @@ MavControlInterfacePure::MavControlInterfacePure(ros::NodeHandle& nh, ros::NodeH
                                                 ros::TransportHints().tcpNoDelay());
   
   std::string obstacle_prediction_topic_name = "/" + enemy_mav_name_ + "/KF_prediction_observer/prediction";
-  ROS_INFO("enemy mav topic name: %s", obstacle_prediction_topic_name.c_str());
+  ROS_INFO("enemy mav prediction topic name: %s", obstacle_prediction_topic_name.c_str());
   obstacle_prediction_subscriber_ = nh_.subscribe(obstacle_prediction_topic_name, 1, 
                                                 &MavControlInterfacePure::ObstaclePredictionCallback, this,
                                                 ros::TransportHints().tcpNoDelay());
