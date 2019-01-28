@@ -66,6 +66,12 @@ cs_add_executable(nonlinear_mpc_node
   src/nonlinear_mpc_node.cc
 )
 
+cs_add_executable(nonlinear_mpc_service_node
+  src/nonlinear_mpc_service_node.cc
+)
+target_link_libraries(nonlinear_mpc_service_node mav_nonlinear_mpc_lib)
+add_dependencies(nonlinear_mpc_service_node ${${PROJECT_NAME}_EXPORTED_TARGETS})
+
 target_link_libraries(mav_nonlinear_mpc_lib ${lapacke_LIBRARIES})
 
 target_link_libraries(nonlinear_mpc_node mav_nonlinear_mpc_lib)

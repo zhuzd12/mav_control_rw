@@ -392,7 +392,9 @@ void NonlinearModelPredictiveControl::calculateRollPitchYawrateThrustCommand(
 
   // yaw controller
   double yaw_error = yaw_ref_.front() - current_yaw;
-
+  // std::cout<<"current yaw: "<<current_yaw<<" ref yaw: "<<yaw_ref_.front()<<std::endl;
+  // std::cout<<"ref begin pos z: "<<position_ref_.front()(2)<<" end pos z: "<<position_ref_.back()(2)<<std::endl;
+  // std::cout<<"yaw_error: "<<yaw_error<<std::endl;
   if (std::abs(yaw_error) > M_PI) {
     if (yaw_error > 0.0) {
       yaw_error = yaw_error - 2.0 * M_PI;
@@ -400,7 +402,8 @@ void NonlinearModelPredictiveControl::calculateRollPitchYawrateThrustCommand(
       yaw_error = yaw_error + 2.0 * M_PI;
     }
   }
-
+  std::cout<<"yaw_error: "<<yaw_error<<" k_yaw_: "<<K_yaw_<<std::endl;
+  std::cout<<"yaw_rate_limit_: "<<yaw_rate_limit_<<std::endl;
   double yaw_rate_cmd = K_yaw_ * yaw_error + yaw_rate_ref_.front();  // feed-forward yaw_rate cmd
 
   if (yaw_rate_cmd > yaw_rate_limit_) {
@@ -410,6 +413,8 @@ void NonlinearModelPredictiveControl::calculateRollPitchYawrateThrustCommand(
   if (yaw_rate_cmd < -yaw_rate_limit_) {
     yaw_rate_cmd = -yaw_rate_limit_;
   }
+  // std::cout<<"ref yaw rate: "<<yaw_rate_ref_.front()<<std::endl;
+  // std::cout<<"yaw rate cmd: "<<yaw_rate_cmd<<std::endl;
 
   *ref_attitude_thrust = Eigen::Vector4d(roll_ref, pitch_ref, yaw_rate_cmd, mass_ * thrust_ref);
 
